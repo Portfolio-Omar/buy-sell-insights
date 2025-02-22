@@ -1,15 +1,27 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, DollarSign, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,6 +35,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { store } from "@/lib/store";
 import { ProductFormData } from "@/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Products = () => {
   const { toast } = useToast();
@@ -42,6 +55,9 @@ const Products = () => {
 
   const addProduct = useMutation({
     mutationFn: async (data: ProductFormData) => {
+      if (data.purchasePrice <= 0 || data.sellingPrice <= 0) {
+        throw new Error("Prices must be greater than zero");
+      }
       return await store.addProduct(data);
     },
     onSuccess: () => {
@@ -57,6 +73,13 @@ const Products = () => {
       toast({
         title: "Success",
         description: "Product added successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
@@ -83,17 +106,23 @@ const Products = () => {
   return (
     <div className="container space-y-8 p-8 pt-6 animate-fadeIn">
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Products</h2>
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Products</h2>
+          <p className="text-muted-foreground">Manage your product inventory here</p>
+        </div>
         <div className="flex items-center space-x-2">
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="bg-primary hover:bg-primary/90 transition-colors">
                 <Plus className="mr-2 h-4 w-4" /> Add Product
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add New Product</DialogTitle>
+                <DialogDescription>
+                  Add a new product to your inventory. All prices must be greater than zero.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-4">
@@ -136,7 +165,7 @@ const Products = () => {
                           purchasePrice: Number(e.target.value),
                         })
                       }
-                      min="0"
+                      min="0.01"
                       step="0.01"
                       required
                     />
@@ -153,13 +182,13 @@ const Products = () => {
                           sellingPrice: Number(e.target.value),
                         })
                       }
-                      min="0"
+                      min="0.01"
                       step="0.01"
                       required
                     />
                   </div>
                 </div>
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 transition-colors">
                   Add Product
                 </Button>
               </form>
@@ -167,7 +196,31 @@ const Products = () => {
           </Dialog>
         </div>
       </div>
-      <div className="rounded-lg border">
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{products?.length || 0}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Value</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              ${products?.reduce((sum, p) => sum + p.purchasePrice * p.quantity, 0).toFixed(2) || "0.00"}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -180,20 +233,41 @@ const Products = () => {
           </TableHeader>
           <TableBody>
             {products?.map((product) => (
-              <TableRow key={product.id}>
+              <TableRow key={product.id} className="hover:bg-muted/50 transition-colors">
                 <TableCell>{product.name}</TableCell>
                 <TableCell>{product.quantity}</TableCell>
                 <TableCell>${product.purchasePrice.toFixed(2)}</TableCell>
                 <TableCell>${product.sellingPrice.toFixed(2)}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => deleteProduct.mutate(product.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="hover:bg-destructive/90 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this product? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteProduct.mutate(product.id)}
+                            className="bg-destructive hover:bg-destructive/90 transition-colors"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </TableCell>
               </TableRow>
@@ -208,6 +282,49 @@ const Products = () => {
           </TableBody>
         </Table>
       </div>
+
+      <footer className="mt-8 border-t pt-8">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Tips</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="list-disc pl-4 space-y-2 text-sm text-muted-foreground">
+                <li>Keep your inventory updated regularly</li>
+                <li>Set selling prices higher than purchase prices</li>
+                <li>Monitor low stock products</li>
+              </ul>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Need Help?</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              <p>For support or questions about managing your inventory, please contact our support team.</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Inventory Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {products && products.some(p => p.quantity < 10) ? (
+                <div className="flex items-center text-amber-500">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  <span className="text-sm">Some products are running low on stock</span>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">All product stocks are healthy</div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        <div className="mt-8 text-center text-sm text-muted-foreground">
+          © 2024 Your Inventory System. All rights reserved.
+        </div>
+      </footer>
     </div>
   );
 };
