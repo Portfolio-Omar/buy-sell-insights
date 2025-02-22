@@ -7,9 +7,9 @@ let sales: Sale[] = [];
 
 export const store = {
   // Product operations
-  getProducts: () => products,
+  getProducts: async () => products,
   
-  addProduct: (product: Omit<Product, "id" | "createdAt" | "updatedAt">) => {
+  addProduct: async (product: Omit<Product, "id" | "createdAt" | "updatedAt">) => {
     const newProduct: Product = {
       id: Math.random().toString(36).slice(2),
       ...product,
@@ -20,7 +20,7 @@ export const store = {
     return newProduct;
   },
   
-  updateProduct: (id: string, updates: Partial<Product>) => {
+  updateProduct: async (id: string, updates: Partial<Product>) => {
     products = products.map((product) =>
       product.id === id
         ? { ...product, ...updates, updatedAt: new Date() }
@@ -29,19 +29,20 @@ export const store = {
     return products.find((p) => p.id === id);
   },
   
-  deleteProduct: (id: string) => {
+  deleteProduct: async (id: string) => {
     products = products.filter((product) => product.id !== id);
   },
   
   // Sale operations
-  getSales: () => sales,
+  getSales: async () => sales,
   
-  addSale: (productId: string, quantity: number) => {
+  addSale: async (productId: string, quantity: number) => {
     const product = products.find((p) => p.id === productId);
     if (!product || product.quantity < quantity) {
       throw new Error("Insufficient stock");
     }
     
+    // Calculate total amount and profit based on per-unit prices
     const totalAmount = product.sellingPrice * quantity;
     const profit = (product.sellingPrice - product.purchasePrice) * quantity;
     
@@ -55,7 +56,7 @@ export const store = {
     };
     
     // Update product quantity
-    store.updateProduct(productId, {
+    await store.updateProduct(productId, {
       quantity: product.quantity - quantity,
     });
     
@@ -64,7 +65,7 @@ export const store = {
   },
   
   // Analytics
-  getDashboardStats: () => {
+  getDashboardStats: async () => {
     const totalProducts = products.length;
     const totalInventoryValue = products.reduce(
       (sum, product) => sum + product.purchasePrice * product.quantity,

@@ -48,8 +48,9 @@ const Sales = () => {
   });
 
   const addSale = useMutation({
-    mutationFn: ({ productId, quantity }: { productId: string; quantity: number }) =>
-      store.addSale(productId, quantity),
+    mutationFn: async ({ productId, quantity }: { productId: string; quantity: number }) => {
+      return await store.addSale(productId, quantity);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });

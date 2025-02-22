@@ -41,7 +41,9 @@ const Products = () => {
   });
 
   const addProduct = useMutation({
-    mutationFn: (data: ProductFormData) => store.addProduct(data),
+    mutationFn: async (data: ProductFormData) => {
+      return await store.addProduct(data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -60,7 +62,9 @@ const Products = () => {
   });
 
   const deleteProduct = useMutation({
-    mutationFn: (id: string) => store.deleteProduct(id),
+    mutationFn: async (id: string) => {
+      return await store.deleteProduct(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
