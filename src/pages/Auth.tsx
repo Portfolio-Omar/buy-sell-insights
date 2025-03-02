@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ const Auth = () => {
   const { user, signIn, signUp, isLoading } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState("login");
+  const navigate = useNavigate();
 
   // Login form state
   const [loginForm, setLoginForm] = useState({
@@ -99,8 +101,20 @@ const Auth = () => {
     setIsSubmitting(true);
     try {
       await signUp(email, password, username, fullName, phoneNumber);
-      // Automatically log the user in after successful registration
-      await signIn(username, password);
+      // After successful registration, switch to the login tab
+      setActiveTab("login");
+      // Pre-fill the username field for convenience
+      setLoginForm(prev => ({ ...prev, username }));
+      // Clear the registration form
+      setRegisterForm({
+        fullName: "",
+        phoneNumber: "",
+        username: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+      
     } catch (error) {
       // Error is handled in the signUp function
     } finally {
@@ -147,7 +161,7 @@ const Auth = () => {
       {/* Auth Forms (Right Side) */}
       <div className="w-full md:w-1/2">
         <div className="max-w-md mx-auto">
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>

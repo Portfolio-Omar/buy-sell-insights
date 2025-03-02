@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
@@ -126,6 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      // Sign up with email and password (using without email verification)
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -135,6 +137,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             full_name: fullName,
             phone_number: phoneNumber,
           },
+          emailRedirectTo: window.location.origin + '/auth',
         },
       });
 
@@ -144,8 +147,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       toast({
         title: "Account created",
-        description: "Your account has been created successfully",
+        description: "Your account has been created successfully. Please login now.",
       });
+      
+      // Sign out the user after registration so they have to log in explicitly
+      await supabase.auth.signOut();
+      
     } catch (error: any) {
       toast({
         title: "Sign up failed",
@@ -174,12 +181,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // Then find the user's email using the id from the profiles table
-      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
-        profileData.id
-      );
+      // Find all users
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', profileData.id)
+        .single();
 
-      if (userError || !userData.user?.email) {
+      if (userError || !userData) {
         toast({
           title: "Login failed",
           description: "Could not retrieve user information",
@@ -188,9 +197,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      // Get email from auth.users (requires admin access which we simulate here)
+      const { data: emailData, error: emailError } = await supabase
+        .rpc('get_user_email', { user_id: profileData.id });
+
+      if (emailError || !emailData) {
+        console.error('Error getting email:', emailError);
+        toast({
+          title: "Login failed",
+          description: "Could not retrieve user email",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Now sign in with the email and password
       const { error } = await supabase.auth.signInWithPassword({
-        email: userData.user.email,
+        email: emailData,
         password,
       });
 
