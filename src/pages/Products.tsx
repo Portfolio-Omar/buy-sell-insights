@@ -1,7 +1,7 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Package, DollarSign, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, DollarSign, AlertTriangle, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,6 +22,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -34,8 +41,9 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { store } from "@/lib/store";
-import { ProductFormData } from "@/types";
+import { ProductFormData, ProductCategory } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const Products = () => {
   const { toast } = useToast();
@@ -46,11 +54,17 @@ const Products = () => {
     quantity: 0,
     purchasePrice: 0,
     sellingPrice: 0,
+    category: "other",
   });
 
   const { data: products } = useQuery({
     queryKey: ["products"],
     queryFn: store.getProducts,
+  });
+
+  const { data: categories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: store.getCategories,
   });
 
   const addProduct = useMutation({
@@ -62,6 +76,7 @@ const Products = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       setOpen(false);
       setFormData({
@@ -69,6 +84,7 @@ const Products = () => {
         quantity: 0,
         purchasePrice: 0,
         sellingPrice: 0,
+        category: "other",
       });
       toast({
         title: "Success",
@@ -103,9 +119,25 @@ const Products = () => {
     addProduct.mutate(formData);
   };
 
+  // Function to get badge color based on category
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'electronics':
+        return 'bg-blue-500 hover:bg-blue-600';
+      case 'clothing':
+        return 'bg-purple-500 hover:bg-purple-600';
+      case 'food':
+        return 'bg-green-500 hover:bg-green-600';
+      case 'books':
+        return 'bg-amber-500 hover:bg-amber-600';
+      default:
+        return 'bg-slate-500 hover:bg-slate-600';
+    }
+  };
+
   return (
-    <div className="container space-y-8 p-8 pt-6 animate-fadeIn">
-      <div className="flex items-center justify-between space-y-2">
+    <div className="container space-y-8 p-4 md:p-8 pt-6 animate-fadeIn">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Products</h2>
           <p className="text-muted-foreground">Manage your product inventory here</p>
@@ -117,7 +149,7 @@ const Products = () => {
                 <Plus className="mr-2 h-4 w-4" /> Add Product
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>Add New Product</DialogTitle>
                 <DialogDescription>
@@ -136,6 +168,26 @@ const Products = () => {
                       }
                       required
                     />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value: ProductCategory) =>
+                        setFormData({ ...formData, category: value })
+                      }
+                    >
+                      <SelectTrigger id="category">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories?.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category.charAt(0).toUpperCase() + category.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="quantity">Quantity</Label>
@@ -198,7 +250,7 @@ const Products = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Products</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
@@ -207,7 +259,7 @@ const Products = () => {
             <div className="text-2xl font-bold">{products?.length || 0}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="hover:shadow-lg transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Value</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -218,6 +270,17 @@ const Products = () => {
             </div>
           </CardContent>
         </Card>
+        <Card className="hover:shadow-lg transition-all">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Categories</CardTitle>
+            <Tag className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {Array.from(new Set(products?.map(p => p.category) || [])).length || 0}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="rounded-lg border bg-card">
@@ -225,6 +288,7 @@ const Products = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Category</TableHead>
               <TableHead>Quantity</TableHead>
               <TableHead>Purchase Price</TableHead>
               <TableHead>Selling Price</TableHead>
@@ -235,6 +299,11 @@ const Products = () => {
             {products?.map((product) => (
               <TableRow key={product.id} className="hover:bg-muted/50 transition-colors">
                 <TableCell>{product.name}</TableCell>
+                <TableCell>
+                  <Badge className={`${getCategoryColor(product.category)} text-white`}>
+                    {product.category.charAt(0).toUpperCase() + product.category.slice(1)}
+                  </Badge>
+                </TableCell>
                 <TableCell>{product.quantity}</TableCell>
                 <TableCell>${product.purchasePrice.toFixed(2)}</TableCell>
                 <TableCell>${product.sellingPrice.toFixed(2)}</TableCell>
@@ -274,7 +343,7 @@ const Products = () => {
             ))}
             {!products?.length && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">
+                <TableCell colSpan={6} className="text-center">
                   No products found
                 </TableCell>
               </TableRow>
