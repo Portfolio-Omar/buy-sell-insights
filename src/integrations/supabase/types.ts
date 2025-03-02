@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       products: {
         Row: {
+          category: string | null
           created_at: string
           id: string
           name: string
@@ -20,6 +21,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           id?: string
           name: string
@@ -29,6 +31,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -46,6 +49,7 @@ export type Database = {
           product_id: string
           profit: number
           quantity: number
+          sale_time: string | null
           total_amount: number
         }
         Insert: {
@@ -54,6 +58,7 @@ export type Database = {
           product_id: string
           profit: number
           quantity: number
+          sale_time?: string | null
           total_amount: number
         }
         Update: {
@@ -62,6 +67,7 @@ export type Database = {
           product_id?: string
           profit?: number
           quantity?: number
+          sale_time?: string | null
           total_amount?: number
         }
         Relationships: [
