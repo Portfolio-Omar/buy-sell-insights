@@ -24,7 +24,9 @@ const Header = () => {
         <div className="flex flex-1 items-center justify-end space-x-4">
           <div className="flex items-center space-x-4">
             <ModeToggle />
-            {!isLoading && (user ? <UserButton /> : <Link to="/auth"><UserButton /></Link>)}
+            {!isLoading && (
+              user ? <UserButton /> : <Link to="/auth" className="hover:text-primary transition">Login / Register</Link>
+            )}
           </div>
         </div>
       </div>

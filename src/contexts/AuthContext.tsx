@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
@@ -145,7 +144,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       toast({
         title: "Account created",
-        description: "Please check your email to verify your account",
+        description: "Your account has been created successfully",
       });
     } catch (error: any) {
       toast({
